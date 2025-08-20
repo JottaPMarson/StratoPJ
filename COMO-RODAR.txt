@@ -1,0 +1,75 @@
+🚀 STRATOPJ - COMO RODAR LOCALMENTE
+=======================================
+
+📋 INÍCIO RÁPIDO:
+
+Windows:
+  .\run-local.bat
+
+macOS/Linux:
+  ./run-local.sh
+
+📍 URL: http://localhost:3000
+🔐 Login: qualquer@email.com
+🔑 Senha: 123456
+
+=======================================
+
+📦 PRÉ-REQUISITOS:
+• Node.js 18+ (https://nodejs.org)
+• Git (opcional)
+
+=======================================
+
+🔧 INSTALAÇÃO MANUAL:
+
+1. Instalar pnpm:
+   npm install -g pnpm
+
+2. Instalar dependências:
+   pnpm install
+
+3. Iniciar desenvolvimento:
+   pnpm dev
+
+=======================================
+
+🛠️ COMANDOS ÚTEIS:
+
+Verificar saúde do projeto:
+  node scripts/dev-utils.js check
+
+Limpar cache:
+  node scripts/dev-utils.js clean
+
+Ver informações:
+  node scripts/dev-utils.js info
+
+Iniciar servidor:
+  pnpm dev
+
+=======================================
+
+❗ PROBLEMAS COMUNS:
+
+Porta 3000 ocupada:
+  pnpm dev --port 3001
+
+Erro de dependências:
+  pnpm store prune
+  rm pnpm-lock.yaml
+  pnpm install
+
+Node.js não encontrado:
+  Baixar em: https://nodejs.org
+
+=======================================
+
+📚 MAIS INFORMAÇÕES:
+  Veja: README-LOCAL.md
+
+🆘 SUPORTE:
+  Documentação completa no arquivo README-LOCAL.md
+  
+=======================================
+StratoPJ v1.0.0 - Sistema de Diagnóstico Financeiro
