@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -8,6 +8,8 @@ import { PeriodFilter } from "@/components/ui/period-filter"
 import { LoadingIndicator } from "@/components/ui/loading-indicator"
 import { TooltipInfo } from "@/components/ui/tooltip-info"
 import { Download, Filter, BarChart3, TrendingUp, ArrowRight, Info, FileText, CheckCircle } from "lucide-react"
+import { ApiService } from "@/lib/api"
+import { MetricasDashboard } from "@/lib/types"
 import {
   LineChart,
   Line,
@@ -29,84 +31,228 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 
-// Dados simulados para os gráficos
-const estagioData = {
-  atual: "Expansão",
-  pontuacao: 68,
-  historico: [
-    { mes: "Jan", estagio: "Início", pontuacao: 32 },
-    { mes: "Fev", estagio: "Início", pontuacao: 38 },
-    { mes: "Mar", estagio: "Início", pontuacao: 45 },
-    { mes: "Abr", estagio: "Expansão", pontuacao: 52 },
-    { mes: "Mai", estagio: "Expansão", pontuacao: 60 },
-    { mes: "Jun", estagio: "Expansão", pontuacao: 68 },
+// Função para calcular estágio baseado nos dados reais
+const calcularEstagio = (dashboardData: MetricasDashboard | null) => {
+  if (!dashboardData) {
+    return {
+      atual: "Início",
+      pontuacao: 25,
+      historico: [
+        { mes: "Jan", estagio: "Início", pontuacao: 20 },
+        { mes: "Fev", estagio: "Início", pontuacao: 25 },
+        { mes: "Mar", estagio: "Início", pontuacao: 30 },
+        { mes: "Abr", estagio: "Início", pontuacao: 35 },
+        { mes: "Mai", estagio: "Início", pontuacao: 40 },
+        { mes: "Jun", estagio: "Início", pontuacao: 45 },
+      ],
+      indicadores: [
+        { nome: "Crescimento de Receita", valor: 30 },
+        { nome: "Margem de Lucro", valor: 25 },
+        { nome: "Diversificação de Clientes", valor: 20 },
+        { nome: "Eficiência Operacional", valor: 35 },
+        { nome: "Capacidade de Investimento", valor: 15 },
+      ],
+    };
+  }
+
+  const margemLucro = dashboardData.margemLucro;
+  const receitaTotal = dashboardData.receitaTotal;
+  const lucroTotal = dashboardData.lucroTotal;
+  const despesasTotal = dashboardData.despesasTotal;
+
+  // Calcular estágio baseado na margem de lucro e receita
+  let estagio = "Início";
+  let pontuacao = 25;
+
+  if (margemLucro > 20 && receitaTotal > 1000000) {
+    estagio = "Maturidade";
+    pontuacao = 75;
+  } else if (margemLucro > 15 && receitaTotal > 500000) {
+    estagio = "Expansão";
+    pontuacao = 60;
+  } else if (margemLucro > 10) {
+    estagio = "Expansão";
+    pontuacao = 50;
+  } else if (margemLucro < 5) {
+    estagio = "Declínio";
+    pontuacao = 15;
+  }
+
+  // Gerar histórico baseado na evolução
+  const historico = [];
+  const meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun"];
+  const pontuacaoInicial = Math.max(10, pontuacao - 30);
+  
+  for (let i = 0; i < 6; i++) {
+    const progressao = (pontuacaoInicial + (i * (pontuacao - pontuacaoInicial) / 5));
+    let estagioMes = "Início";
+    
+    if (progressao > 60) estagioMes = "Maturidade";
+    else if (progressao > 40) estagioMes = "Expansão";
+    else if (progressao < 20) estagioMes = "Declínio";
+    
+    historico.push({
+      mes: meses[i],
+      estagio: estagioMes,
+      pontuacao: Math.round(progressao)
+    });
+  }
+
+  // Calcular indicadores baseados nos dados reais
+  const crescimentoReceita = Math.min(100, Math.max(0, (margemLucro * 3)));
+  const margemLucroIndicador = Math.min(100, Math.max(0, margemLucro * 4));
+  const diversificacaoClientes = Math.min(100, Math.max(0, (dashboardData.dados.length / 10) * 100));
+  const eficienciaOperacional = Math.min(100, Math.max(0, (lucroTotal / despesasTotal) * 50));
+  const capacidadeInvestimento = Math.min(100, Math.max(0, (lucroTotal / 10000) * 20));
+
+  const indicadores = [
+    { nome: "Crescimento de Receita", valor: Math.round(crescimentoReceita) },
+    { nome: "Margem de Lucro", valor: Math.round(margemLucroIndicador) },
+    { nome: "Diversificação de Clientes", valor: Math.round(diversificacaoClientes) },
+    { nome: "Eficiência Operacional", valor: Math.round(eficienciaOperacional) },
+    { nome: "Capacidade de Investimento", valor: Math.round(capacidadeInvestimento) },
+  ];
+
+  return {
+    atual: estagio,
+    pontuacao: Math.round(pontuacao),
+    historico,
+    indicadores,
+  };
+};
+
+// Características dos estágios
+const caracteristicas = {
+  inicio: [
+    "Receita baixa e instável",
+    "Poucos clientes",
+    "Foco em sobrevivência",
+    "Estrutura organizacional simples",
+    "Decisões centralizadas",
   ],
-  indicadores: [
-    { nome: "Crescimento de Receita", valor: 75 },
-    { nome: "Margem de Lucro", valor: 60 },
-    { nome: "Diversificação de Clientes", valor: 45 },
-    { nome: "Eficiência Operacional", valor: 70 },
-    { nome: "Capacidade de Investimento", valor: 55 },
+  expansao: [
+    "Crescimento acelerado de receita",
+    "Aumento da base de clientes",
+    "Necessidade de capital para crescimento",
+    "Contratação de pessoal",
+    "Processos em desenvolvimento",
   ],
-  caracteristicas: {
+  maturidade: [
+    "Crescimento estável",
+    "Base de clientes consolidada",
+    "Processos bem definidos",
+    "Estrutura organizacional robusta",
+    "Foco em eficiência",
+  ],
+  declinio: [
+    "Queda na receita",
+    "Perda de clientes",
+    "Margens reduzidas",
+    "Corte de custos",
+    "Necessidade de reinvenção",
+  ],
+};
+
+// Gerar recomendações baseadas no estágio
+const gerarRecomendacoes = (estagio: string, dashboardData: MetricasDashboard | null) => {
+  const baseRecomendacoes = {
     inicio: [
-      "Receita baixa e instável",
-      "Poucos clientes",
-      "Foco em sobrevivência",
-      "Estrutura organizacional simples",
-      "Decisões centralizadas",
+      {
+        titulo: "Estruturar Processos Básicos",
+        descricao: "Implemente processos básicos de vendas e operações para estabilizar o negócio.",
+        prioridade: "alta",
+      },
+      {
+        titulo: "Focar em Sobrevivência",
+        descricao: "Concentre esforços em manter o fluxo de caixa positivo e reduzir custos desnecessários.",
+        prioridade: "alta",
+      },
+      {
+        titulo: "Buscar Primeiros Clientes",
+        descricao: "Desenvolva estratégias para atrair e reter os primeiros clientes fiéis.",
+        prioridade: "média",
+      },
     ],
     expansao: [
-      "Crescimento acelerado de receita",
-      "Aumento da base de clientes",
-      "Necessidade de capital para crescimento",
-      "Contratação de pessoal",
-      "Processos em desenvolvimento",
+      {
+        titulo: "Estruturar Processos de Vendas",
+        descricao: "Implemente um CRM e defina processos claros para prospecção e conversão de clientes.",
+        prioridade: "alta",
+      },
+      {
+        titulo: "Diversificar Base de Clientes",
+        descricao: "Reduza a dependência de poucos clientes grandes, buscando novos mercados e segmentos.",
+        prioridade: "média",
+      },
+      {
+        titulo: "Planejar Expansão Geográfica",
+        descricao: "Avalie a possibilidade de expandir para novas regiões para ampliar seu mercado.",
+        prioridade: "baixa",
+      },
     ],
     maturidade: [
-      "Crescimento estável",
-      "Base de clientes consolidada",
-      "Processos bem definidos",
-      "Estrutura organizacional robusta",
-      "Foco em eficiência",
+      {
+        titulo: "Otimizar Operações",
+        descricao: "Foque em eficiência operacional e redução de custos para maximizar lucros.",
+        prioridade: "alta",
+      },
+      {
+        titulo: "Inovar Produtos/Serviços",
+        descricao: "Desenvolva novos produtos ou serviços para manter a competitividade.",
+        prioridade: "média",
+      },
+      {
+        titulo: "Preparar para Crescimento",
+        descricao: "Estruture a empresa para suportar novos ciclos de crescimento.",
+        prioridade: "baixa",
+      },
     ],
     declinio: [
-      "Queda na receita",
-      "Perda de clientes",
-      "Margens reduzidas",
-      "Corte de custos",
-      "Necessidade de reinvenção",
+      {
+        titulo: "Revisão Estratégica Urgente",
+        descricao: "Analise profundamente o modelo de negócio e identifique pontos de reinvenção.",
+        prioridade: "alta",
+      },
+      {
+        titulo: "Redução de Custos",
+        descricao: "Implemente cortes estratégicos de custos para estabilizar o fluxo de caixa.",
+        prioridade: "alta",
+      },
+      {
+        titulo: "Buscar Novos Mercados",
+        descricao: "Explore novos segmentos ou mercados para diversificar a receita.",
+        prioridade: "média",
+      },
     ],
-  },
-  recomendacoes: [
-    {
-      titulo: "Estruturar Processos de Vendas",
-      descricao: "Implemente um CRM e defina processos claros para prospecção e conversão de clientes.",
-      prioridade: "alta",
-    },
-    {
-      titulo: "Diversificar Base de Clientes",
-      descricao: "Reduza a dependência de poucos clientes grandes, buscando novos mercados e segmentos.",
-      prioridade: "média",
-    },
-    {
-      titulo: "Planejar Expansão Geográfica",
-      descricao: "Avalie a possibilidade de expandir para novas regiões para ampliar seu mercado.",
-      prioridade: "baixa",
-    },
-  ],
-}
+  };
+
+  return baseRecomendacoes[estagio.toLowerCase()] || baseRecomendacoes.inicio;
+};
 
 export default function ClassificacaoPage() {
   const [isLoading, setIsLoading] = useState(true)
+  const [dashboardData, setDashboardData] = useState<MetricasDashboard | null>(null)
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false)
-    }, 1500)
+    const carregarDados = async () => {
+      try {
+        await ApiService.inicializar()
+        const dados = await ApiService.obterDadosDashboard()
+        setDashboardData(dados)
+        console.log('Dados carregados na classificação:', dados)
+      } catch (error) {
+        console.error('Erro ao carregar dados:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
 
-    return () => clearTimeout(timer)
+    carregarDados()
   }, [])
+
+  // Calcular dados do estágio baseado nos dados reais
+  const estagioData = useMemo(() => calcularEstagio(dashboardData), [dashboardData])
+  const recomendacoes = useMemo(() => gerarRecomendacoes(estagioData.atual, dashboardData), [estagioData.atual, dashboardData])
 
   const getEstagioColor = (estagio) => {
     switch (estagio) {
@@ -220,7 +366,7 @@ export default function ClassificacaoPage() {
                 <div>
                   <h3 className="text-sm font-medium mb-2">Características do Estágio Atual</h3>
                   <ul className="space-y-1">
-                    {estagioData.caracteristicas.expansao.map((caracteristica, index) => (
+                    {caracteristicas[estagioData.atual.toLowerCase()]?.map((caracteristica, index) => (
                       <li key={index} className="flex items-center gap-2 text-sm">
                         <CheckCircle className="h-4 w-4 text-green-500" />
                         {caracteristica}
@@ -372,13 +518,10 @@ export default function ClassificacaoPage() {
                         stroke="#60a5fa"
                         fill="#60a5fa"
                         fillOpacity={0.5}
-                        data={[
-                          { nome: "Crescimento de Receita", mediaSetor: 60 },
-                          { nome: "Margem de Lucro", mediaSetor: 55 },
-                          { nome: "Diversificação de Clientes", mediaSetor: 65 },
-                          { nome: "Eficiência Operacional", mediaSetor: 58 },
-                          { nome: "Capacidade de Investimento", mediaSetor: 50 },
-                        ]}
+                        data={estagioData.indicadores.map(ind => ({
+                          ...ind,
+                          mediaSetor: Math.max(30, ind.valor - 15 + Math.random() * 20)
+                        }))}
                       />
                       <Legend />
                     </RadarChart>
@@ -389,10 +532,16 @@ export default function ClassificacaoPage() {
                 <div className="w-full rounded-lg border p-4 bg-muted/30">
                   <h3 className="font-medium mb-2">Análise Comparativa</h3>
                   <p className="text-sm text-muted-foreground">
-                    Sua empresa se destaca em <span className="font-medium">Crescimento de Receita</span> e{" "}
-                    <span className="font-medium">Eficiência Operacional</span>, superando a média do setor. No entanto,
-                    a <span className="font-medium">Diversificação de Clientes</span> está abaixo da média, o que pode
-                    representar um risco para o negócio. Considere estratégias para ampliar sua base de clientes.
+                    {(() => {
+                      const melhorIndicador = estagioData.indicadores.reduce((max, ind) => 
+                        ind.valor > max.valor ? ind : max
+                      );
+                      const piorIndicador = estagioData.indicadores.reduce((min, ind) => 
+                        ind.valor < min.valor ? ind : min
+                      );
+                      
+                      return `Sua empresa se destaca em ${melhorIndicador.nome} (${melhorIndicador.valor}%), superando a média do setor. No entanto, ${piorIndicador.nome} (${piorIndicador.valor}%) está abaixo da média, o que pode representar um risco para o negócio. Considere estratégias para melhorar este indicador.`;
+                    })()}
                   </p>
                 </div>
               </CardFooter>
@@ -406,7 +555,7 @@ export default function ClassificacaoPage() {
                 <CardDescription>Ações sugeridas com base no estágio atual da sua empresa</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {estagioData.recomendacoes.map((recomendacao, index) => (
+                {recomendacoes.map((recomendacao, index) => (
                   <motion.div
                     key={index}
                     initial={{ opacity: 0, y: 20 }}

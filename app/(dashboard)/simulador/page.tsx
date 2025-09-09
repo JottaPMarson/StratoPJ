@@ -9,6 +9,43 @@ import { Label } from "@/components/ui/label"
 import { LoadingIndicator } from "@/components/ui/loading-indicator"
 import { TooltipInfo } from "@/components/ui/tooltip-info"
 import { Download, Save, RefreshCw, ArrowRight, CheckCircle, BarChart2, Info, AlertCircle } from "lucide-react"
+
+// Interfaces para tipagem
+interface SimulacaoAnterior {
+  receita: number
+  despesa: number
+  investimento: number
+  taxaJuros: number
+  periodo: number
+  saldoFinal: number
+  crescimentoPercentual: string
+  projecao: any[]
+  taxaCrescimentoReceita?: number
+  taxaCrescimentoDespesa?: number
+}
+
+interface CenarioSalvo {
+  id: number
+  nome: string
+  descricao: string
+  receita: number
+  despesa: number
+  investimento: number
+  taxaJuros: number
+  periodo: number
+  taxaCrescimentoReceita: number
+  taxaCrescimentoDespesa: number
+  saldoFinal: number
+  crescimentoPercentual: string
+  data: string
+}
+
+interface ImpactoSimulacao {
+  saldoFinalDiferenca: number
+  crescimentoDiferenca: number
+  mesesPositivos: number
+  retornoInvestimentoTotal: number
+}
 import {
   BarChart,
   Bar,
@@ -46,18 +83,18 @@ export default function SimuladorPage() {
   const [taxaJuros, setTaxaJuros] = useState(12)
   const [periodo, setPeriodo] = useState(12)
   const [cenarioAtivo, setCenarioAtivo] = useState("personalizado")
-  const [cenariosSalvos, setCenariosSalvos] = useState([])
+  const [cenariosSalvos, setCenariosSalvos] = useState<CenarioSalvo[]>([])
   const [comparandoCenarios, setComparandoCenarios] = useState(false)
   const [saldoFinal, setSaldoFinal] = useState(0)
   const [crescimentoPercentual, setCrescimentoPercentual] = useState("0")
-  const [simulacaoAnterior, setSimulacaoAnterior] = useState(null)
+  const [simulacaoAnterior, setSimulacaoAnterior] = useState<SimulacaoAnterior | null>(null)
   const [showSaveDialog, setShowSaveDialog] = useState(false)
   const [nomeCenario, setNomeCenario] = useState("")
   const [descricaoCenario, setDescricaoCenario] = useState("")
   const [taxaCrescimentoReceita, setTaxaCrescimentoReceita] = useState(2)
   const [taxaCrescimentoDespesa, setTaxaCrescimentoDespesa] = useState(1.5)
   const [showImpactoDialog, setShowImpactoDialog] = useState(false)
-  const [impactoSimulacao, setImpactoSimulacao] = useState(null)
+  const [impactoSimulacao, setImpactoSimulacao] = useState<ImpactoSimulacao | null>(null)
   const [isSimulando, setIsSimulando] = useState(false)
 
   // Referência para o gráfico
@@ -72,7 +109,7 @@ export default function SimuladorPage() {
   }, [])
 
   // Aplicar cenário pré-configurado
-  const aplicarCenario = (tipo) => {
+  const aplicarCenario = (tipo: string) => {
     // Guardar simulação anterior para comparação
     setSimulacaoAnterior({
       receita,
@@ -128,13 +165,13 @@ export default function SimuladorPage() {
 
   // Calcular projeção financeira com parâmetros específicos
   const calcularProjecao = (
-    receitaInicial,
-    despesaInicial,
-    investimentoInicial,
-    taxaJurosParam,
-    periodoParam,
-    taxaCrescReceitaParam,
-    taxaCrescDespesaParam,
+    receitaInicial: number,
+    despesaInicial: number,
+    investimentoInicial: number,
+    taxaJurosParam: number,
+    periodoParam: number,
+    taxaCrescReceitaParam: number,
+    taxaCrescDespesaParam: number,
   ) => {
     const projecao = []
     let saldoAtual = receitaInicial - despesaInicial
@@ -146,9 +183,9 @@ export default function SimuladorPage() {
       const mes = i + 1
 
       // Cálculo mais realista de crescimento de receita e despesa
-      const receitaMensal = i === 0 ? receitaInicial : projecao[i - 1].receita * (1 + taxaCrescReceitaParam / 100)
+      const receitaMensal: number = i === 0 ? receitaInicial : projecao[i - 1].receita * (1 + taxaCrescReceitaParam / 100)
 
-      const despesaMensal = i === 0 ? despesaInicial : projecao[i - 1].despesa * (1 + taxaCrescDespesaParam / 100)
+      const despesaMensal: number = i === 0 ? despesaInicial : projecao[i - 1].despesa * (1 + taxaCrescDespesaParam / 100)
 
       const saldoMensal = receitaMensal - despesaMensal
 
@@ -291,7 +328,7 @@ export default function SimuladorPage() {
   }
 
   // Carregar cenário salvo
-  const carregarCenario = (cenario) => {
+  const carregarCenario = (cenario: CenarioSalvo) => {
     // Guardar simulação anterior para comparação
     setSimulacaoAnterior({
       receita,
@@ -674,12 +711,12 @@ export default function SimuladorPage() {
                               borderRadius: "8px",
                             }}
                             formatter={(value, name) => {
-                              if (name === "saldoFinal") return [`R$ ${value.toLocaleString("pt-BR")}`, "Saldo Final"]
-                              if (name === "crescimento") return [`${value.toFixed(1)}%`, "Crescimento"]
-                              if (name === "receita") return [`R$ ${value.toLocaleString("pt-BR")}`, "Receita"]
-                              if (name === "despesa") return [`R$ ${value.toLocaleString("pt-BR")}`, "Despesa"]
+                              if (name === "saldoFinal") return [`R$ ${Number(value).toLocaleString("pt-BR")}`, "Saldo Final"]
+                              if (name === "crescimento") return [`${Number(value).toFixed(1)}%`, "Crescimento"]
+                              if (name === "receita") return [`R$ ${Number(value).toLocaleString("pt-BR")}`, "Receita"]
+                              if (name === "despesa") return [`R$ ${Number(value).toLocaleString("pt-BR")}`, "Despesa"]
                               if (name === "investimento")
-                                return [`R$ ${value.toLocaleString("pt-BR")}`, "Investimento"]
+                                return [`R$ ${Number(value).toLocaleString("pt-BR")}`, "Investimento"]
                               return [value, name]
                             }}
                           />

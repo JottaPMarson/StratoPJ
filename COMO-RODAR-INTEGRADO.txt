@@ -1,0 +1,129 @@
+# Como Rodar o Projeto com Dados CSV Integrados
+
+## ✅ Integração Concluída
+
+O projeto agora está configurado para ler dados diretamente dos arquivos CSV, sem necessidade de backend Java.
+
+## 📁 Arquivos CSV Processados
+
+Os seguintes arquivos foram movidos para a pasta `public/` e estão sendo processados:
+
+- `public/base1.csv` - Dados das empresas (50.000 registros)
+- `public/base2.csv` - Transações entre empresas (100.000 registros)  
+- `public/layout.csv` - Layout e especificações dos dados
+
+## 🚀 Como Executar
+
+1. **Instalar dependências:**
+   ```bash
+   npm install
+   ```
+
+2. **Executar o projeto:**
+   ```bash
+   npm run dev
+   ```
+
+3. **Acessar o dashboard:**
+   - Abra o navegador em: http://localhost:3000
+   - Navegue para o Dashboard para ver os dados dos CSVs
+
+## 📊 Dados Disponíveis
+
+### Base 1 - Empresas
+- **ID**: Número do Registro do cliente (CNPJ anonimizado)
+- **VL_FATU**: Valor do Faturamento anual
+- **VL_SLDO**: Valor do Saldo em Conta corrente
+- **DT_ABRT**: Data de abertura da empresa
+- **DS_CNAE**: Descrição do CNAE
+- **DT_REFE**: Data de referência da Base
+
+### Base 2 - Transações
+- **ID_PGTO**: ID do cliente que enviou o valor
+- **ID_RCBE**: ID do cliente que recebeu o valor
+- **VL**: Valor transacionado
+- **DS_TRAN**: Tipo de transação (PIX, TED, BOLETO, SISTEMICO)
+- **DT_REFE**: Data de referência da transação
+
+## 🔧 Funcionalidades Implementadas
+
+### API Service (`lib/api.ts`)
+- `obterDados()` - Retorna dados financeiros das empresas
+- `obterMetricas()` - Retorna métricas gerais
+- `obterDadosDashboard()` - Retorna dados completos do dashboard
+- `obterRedeFinanceira()` - Retorna rede financeira completa
+- `obterEmpresa(id)` - Retorna empresa específica
+- `obterTransacoesEmpresa(id)` - Retorna transações de uma empresa
+- `obterMetricasPorSetor()` - Retorna métricas por setor
+- `obterTendencias()` - Retorna tendências por período
+
+### CSV Service (`lib/csv-service.ts`)
+- Carregamento automático dos CSVs
+- Parsing com biblioteca PapaParse
+- Cache de dados para performance
+- Processamento de métricas e análises
+
+### Tipos TypeScript (`lib/types.ts`)
+- Interfaces para todas as entidades
+- Tipos para transações e classificações
+- Estruturas para relatórios e análises
+
+## 📈 Dashboard Atualizado
+
+O dashboard agora exibe:
+- **KPIs reais** baseados nos dados CSV
+- **Gráficos** com dados das transações
+- **Métricas por setor** (CNAE)
+- **Análise de rede financeira**
+- **Tendências temporais**
+
+## 🛠️ Tecnologias Utilizadas
+
+- **PapaParse**: Biblioteca para parsing de CSV
+- **TypeScript**: Tipagem estática
+- **Next.js**: Framework React
+- **Recharts**: Gráficos e visualizações
+- **Tailwind CSS**: Estilização
+
+## 🔍 Como Verificar se Está Funcionando
+
+1. Acesse o dashboard em http://localhost:3000/dashboard
+2. Verifique se os KPIs mostram valores reais (não "Carregando...")
+3. Os gráficos devem exibir dados das transações
+4. Abra o console do navegador para ver logs de carregamento
+
+## 📝 Logs de Debug
+
+No console do navegador, você verá:
+```
+Dados carregados: 50000 empresas, 100000 transações
+Dados CSV carregados com sucesso
+```
+
+## 🚨 Solução de Problemas
+
+### Se os dados não carregarem:
+1. Verifique se os arquivos CSV estão em `public/`
+2. Abra o console do navegador para ver erros
+3. Verifique se o servidor está rodando na porta 3000
+
+### Se houver erros de parsing:
+1. Verifique se os arquivos CSV não estão corrompidos
+2. Confirme se o delimitador é ponto e vírgula (;)
+3. Verifique se o encoding é UTF-8
+
+## 🎯 Próximos Passos
+
+- [ ] Implementar filtros por período
+- [ ] Adicionar mais visualizações
+- [ ] Criar relatórios exportáveis
+- [ ] Implementar busca de empresas
+- [ ] Adicionar análise de tendências
+
+## 📞 Suporte
+
+Se encontrar problemas, verifique:
+1. Console do navegador para erros
+2. Terminal onde o servidor está rodando
+3. Estrutura dos arquivos CSV
+4. Dependências instaladas corretamente

@@ -413,6 +413,7 @@ export default function AnaliseRedePage() {
     return prevAlerts
   }
 
+
   const handleRefreshData = () => {
     setIsLoading(true)
     setTimeout(() => {
